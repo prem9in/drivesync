@@ -266,7 +266,7 @@ public static class Sync
                         //// push to Queue
                         // if (newFileCount < 5)
                         // {
-                           await runtime.OutputQueue.AddAsync(nfile);
+                            runtime.OutputQueue.AddAsync(nfile);
                         //}
                     }
                 }
