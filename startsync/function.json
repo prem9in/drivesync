@@ -1,0 +1,63 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "request",
+      "type": "httpTrigger",
+      "direction": "in",
+      "methods": [
+        "get",
+        "options",
+        "post"
+      ]
+    },
+    {
+      "name": "return",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "type": "table",
+      "name": "onedriveConnect",
+      "tableName": "oneDriveToken",
+      "connection": "AzureWebJobsStorage",
+      "direction": "out"
+    },
+    {
+      "type": "table",
+      "name": "fileInfoTable",
+      "tableName": "DriveFiles",
+      "connection": "AzureWebJobsStorage",
+      "direction": "out"
+    },
+    {
+      "type": "table",
+      "name": "syncInfoTable",
+      "tableName": "DriveFiles",
+      "connection": "AzureWebJobsStorage",
+      "direction": "out"
+    },
+    {
+      "type": "table",
+      "name": "authConnect",
+      "tableName": "oneDriveToken",
+      "connection": "AzureWebJobsStorage",
+      "direction": "in"
+    },
+    {
+      "type": "table",
+      "name": "fileInfoMeta",
+      "tableName": "DriveFiles",
+      "connection": "AzureWebJobsStorage",
+      "direction": "in"
+    },
+    {
+      "type": "queue",
+      "name": "outputQueue",
+      "queueName": "filesQueue",
+      "connection": "AzureWebJobsStorage",
+      "direction": "out"
+    }
+  ],
+  "disabled": false
+}
