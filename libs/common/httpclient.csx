@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Threading;
 
 public static class Http
 {
@@ -50,7 +51,8 @@ public static class Http
                 request.Content = new StringContent(postData, Encoding.UTF8, postMediaType);
             }
 
-            var response = await client.SendAsync(request);
+            var tokenSource = new CancellationTokenSource(60 * 1000 * 60);
+            var response = await client.SendAsync(request, System.Net.Http.HttpCompletionOption.ResponseContentRead, tokenSource.Token);
             return response;            
         }
     }
