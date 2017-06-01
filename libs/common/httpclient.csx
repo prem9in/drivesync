@@ -18,7 +18,8 @@ using System.Threading;
 
 public static class Http
 {
-   
+    private static int Timeout = 60 * 1000 * 60; // one hour
+
     public static async Task<Stream> MakeRequestForFile(string url, HttpMethod method, Dictionary<string, string> headers, string postData, string postMediaType)
     {
         var response = await Send(url, method, headers, postData, postMediaType);
@@ -37,6 +38,7 @@ public static class Http
     {
         using (var client = new HttpClient(GetHandler()))
         {
+            client.Timeout = Timeout;
             var request = new HttpRequestMessage() { RequestUri = new Uri(url), Method = method };
             if (headers != null && headers.Any())
             {
@@ -51,7 +53,7 @@ public static class Http
                 request.Content = new StringContent(postData, Encoding.UTF8, postMediaType);
             }
 
-            var tokenSource = new CancellationTokenSource(60 * 1000 * 60);
+            var tokenSource = new CancellationTokenSource(Timeout);
             var response = await client.SendAsync(request, System.Net.Http.HttpCompletionOption.ResponseContentRead, tokenSource.Token);
             return response;            
         }
