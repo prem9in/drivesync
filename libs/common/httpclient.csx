@@ -22,8 +22,15 @@ public static class Http
     public static async Task<Stream> MakeRequestForFile(string url, HttpMethod method, Dictionary<string, string> headers, string postData, string postMediaType)
     {
         var response = await Send(url, method, headers, postData, postMediaType);
-        var result = await response.Content.ReadAsStreamAsync();
-        return result;        
+        if (response.StatusCode == HttpStatusCode.OK)
+        {
+            var result = await response.Content.ReadAsStreamAsync();
+            return result;
+        }
+        else
+        {
+            return null;
+        }   
     }
 
     public static async Task<Tuple<TResponse, TError>> MakeRequest<TResponse, TError>(string url, HttpMethod method, Dictionary<string, string> headers, string postData, string postMediaType)

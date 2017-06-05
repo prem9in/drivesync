@@ -33,5 +33,8 @@ public static class AppConfiguration
     public static string BDriveStorage = Get("BDriveStorage");
     public static string DriveContainer = Get("DriveContainer");
     public static string DriveThumbContainer = Get("DriveThumbContainer");
+    public static ulong MaxAllowedSize = ulong.Parse(Get("MaxAllowedSize"));
+    public static ulong SizeAfterDelete = ulong.Parse(Get("SizeAfterDelete"));
+    public static string OneDriveFileDeleteFormat = Get("OneDriveFileDeleteFormat");
 }
 

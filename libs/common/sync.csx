@@ -29,6 +29,57 @@ using System.Threading.Tasks;
 
 public static class Sync
 {
+    private static List<string> SafeFolders = new List<string>() { "/Study/", "/Vehicle/", "/Sushma/", "/Personal/", "Docs", "/BellaBaby/" };
+    public static  List<OneDriveItem> StartDelete(Runtime runtime, IEnumerable<OneDriveItem> allDriveFiles, DateTime timeStamp)
+    {
+        ulong driveSize = 0;
+        runtime.Log.Info("Ordering by DateModified");
+        var orderedFiles = allDriveFiles.OrderBy(f => f.LastModifiedDateTime);
+        foreach(var files in orderedFiles)
+        {
+            driveSize += (ulong)files.Size;
+        }
+        runtime.Log.Info("Total drive size " + driveSize);
+        var filesToDelete = new List<OneDriveItem>();
+        if (driveSize > AppConfiguration.MaxAllowedSize)
+        {
+            var newDriveSize = driveSize;
+            runtime.Log.Info("Getting Existing files");
+            var exStart = DateTime.UtcNow;
+            var existingFiles = runtime.FileInfoMeta.Where(c => c.PartitionKey == "DriveFiles" && c.Blobed).ToList();
+            var ela = DateTime.UtcNow - exStart;
+            runtime.Log.Info("Time to get existing files " + ela);
+            runtime.Log.Info("Existing files count " + existingFiles.Count);
+            foreach (var files in orderedFiles)
+            {
+                if (SafeFolders.Any(s => files.FullPath.IndexOf(s, StringComparison.OrdinalIgnoreCase) > -1)
+                    || files.FullPath.LastIndexOf("/") <= 1)
+                {
+                    runtime.Log.Info("Safe file " + files.FullPath);
+                    continue;
+                }
+
+                filesToDelete.Add(files);
+
+              //  runtime.DeleteQueue.AddAsync(files);
+                newDriveSize = newDriveSize - (ulong)files.Size;
+                if (newDriveSize < AppConfiguration.SizeAfterDelete)
+                {
+                     runtime.DeleteQueue.AddAsync(files);
+
+                    /// we have reached the size to stop delete.
+                    runtime.Log.Info("Expected drive size after deleting  " + newDriveSize);
+                    break;
+                }
+            }
+        }
+
+        runtime.Log.Info("Number of files to delete  " + filesToDelete.Count);
+        var last = filesToDelete[filesToDelete.Count - 1];
+        runtime.Log.Info("Last file to deleted  " + last.Type + " " + last.FullPath + " " + last.LastModifiedDateTime);
+        return filesToDelete;
+    }
+
     public static async Task<bool> SyncFile(Runtime runtime, FileInfo filetoSync)
     {
         var taskList = new List<Task>();
@@ -73,7 +124,7 @@ public static class Sync
         }
        
         await Task.WhenAll(taskList);
-        if (uploadFile.Result.Blobed)
+        if (uploadFile != null && uploadFile.Result.Blobed)
         {
             runtime.Log.Info("Marking Blobed " + filetoSync.ToString());
             var operation = TableOperation.InsertOrReplace(filetoSync);

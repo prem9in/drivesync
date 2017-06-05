@@ -71,7 +71,26 @@ public static class OneDrive
         var fileStream = await CallOneDriveForFile(runtime, fileQuery);
         return fileStream;
     }
-    
+
+    public static async Task<string> DeleteFile(Runtime runtime, OneDriveItem deleteItem)
+    {
+        runtime.Log.Info("Deleting " + deleteItem.FullPath);
+        string response = null;
+        var deleteUrl = string.Format(AppConfiguration.OneDriveFileDeleteFormat, AppConfiguration.OneDriveBaseUri, deleteItem.Id);
+        var result = await Http.MakeRequest<string, OneDriveErrorResponse>(deleteUrl, HttpMethod.Delete, OAuthHeaders(runtime), null, null);
+        if (result.Item2 != null)
+        {
+            //// Error condition
+        }
+        else
+        {
+            response = result.Item1;
+        }
+
+        runtime.Log.Info("Deleted successfully " + deleteItem.FullPath);
+        return response;
+    }
+
     private static string GetContentPath(string id, bool isThumbnail)
     {
         return isThumbnail ? string.Format(AppConfiguration.OneDriveFileThumbnailFormat, AppConfiguration.OneDriveBaseUri, id) :

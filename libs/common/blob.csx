@@ -22,20 +22,38 @@ public static class BlobDrive
         runtime.Log.Info("Uploading to Blob for " + filemeta.ToString());
         var blref = isThumbnail ? driveThumbContainer.GetBlockBlobReference(blobName) :
                     driveContainer.GetBlockBlobReference(blobName);
-        await blref.UploadFromStreamAsync(fstream, new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext()); 
-        runtime.Log.Info("Setting Metadata for " + filemeta.ToString());
-        blref.Metadata.Add("SyncId", filemeta.SyncId.ToString("D"));
-        blref.Metadata.Add("Id", filemeta.Id);
-        blref.Metadata.Add("Type", filemeta.Type);
-        blref.Metadata.Add("MimeType", filemeta.MimeType);
-        blref.Metadata.Add("Size", filemeta.Size.ToString());
-        await blref.SetMetadataAsync(new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
-        runtime.Log.Info("Setting Properties for " + filemeta.ToString());
-        blref.Properties.ContentType = filemeta.MimeType;
-        await blref.SetPropertiesAsync(new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
-        filemeta.Blobed = true;
-        runtime.Log.Info("File Blobed: " + filemeta.ToString());
-        return filemeta;
+        try
+        {
+            await blref.UploadFromStreamAsync(fstream, new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
+            runtime.Log.Info("Setting Metadata for " + filemeta.ToString());
+            blref.Metadata.Add("SyncId", filemeta.SyncId.ToString("D"));
+            blref.Metadata.Add("Id", filemeta.Id);
+            blref.Metadata.Add("Type", filemeta.Type);
+            blref.Metadata.Add("MimeType", filemeta.MimeType);
+            blref.Metadata.Add("Size", filemeta.Size.ToString());
+            await blref.SetMetadataAsync(new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
+            runtime.Log.Info("Setting Properties for " + filemeta.ToString());
+            blref.Properties.ContentType = filemeta.MimeType;
+            await blref.SetPropertiesAsync(new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
+            filemeta.Blobed = true;
+            return filemeta;
+        }
+        catch (Microsoft.WindowsAzure.Storage.StorageException)
+        {
+            runtime.Log.Warning("Error Detected while uploading " + filemeta);
+            runtime.Log.Info("Uploading a zero byte blob block");
+            var buffer = new byte[0];
+            blref.UploadFromByteArray(buffer, 0, 0, new AccessCondition(), new BlobRequestOptions() { ServerTimeout = TimeSpan.FromHours(1), MaximumExecutionTime = TimeSpan.FromHours(1) }, new OperationContext());
+            runtime.Log.Info("Sleep 5 seconds");
+            System.Threading.Thread.Sleep(1000 * 5);
+            runtime.Log.Info("Delete bad blob block");
+            blref.DeleteIfExists();
+            runtime.Log.Info("Success ... bad blob block removed.");
+            runtime.Log.Info("Sleep 5 seconds");
+            System.Threading.Thread.Sleep(1000 * 5);
+            throw;
+        }
+        
     }
 
     private static string NormalizeBlobName(string blobName)

@@ -24,20 +24,6 @@
     },
     {
       "type": "table",
-      "name": "fileInfoTable",
-      "tableName": "DriveFiles",
-      "connection": "AzureWebJobsStorage",
-      "direction": "out"
-    },
-    {
-      "type": "table",
-      "name": "syncInfoTable",
-      "tableName": "DriveFiles",
-      "connection": "AzureWebJobsStorage",
-      "direction": "out"
-    },
-    {
-      "type": "table",
       "name": "authConnect",
       "tableName": "oneDriveToken",
       "connection": "AzureWebJobsStorage",
@@ -52,8 +38,8 @@
     },
     {
       "type": "queue",
-      "name": "outputQueue",
-      "queueName": "filesQueue",
+      "name": "deleteQueue",
+      "queueName": "filesDeleteQueue",
       "connection": "AzureWebJobsStorage",
       "direction": "out"
     }
