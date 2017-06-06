@@ -33,9 +33,7 @@ public static class Sync
     public static  List<OneDriveItem> StartDelete(Runtime runtime, IEnumerable<OneDriveItem> allDriveFiles, DateTime timeStamp)
     {
         ulong driveSize = 0;
-        runtime.Log.Info("Ordering by DateModified");
-        var orderedFiles = allDriveFiles.OrderBy(f => f.LastModifiedDateTime);
-        foreach(var files in orderedFiles)
+        foreach(var files in allDriveFiles)
         {
             driveSize += (ulong)files.Size;
         }
@@ -44,11 +42,24 @@ public static class Sync
         if (driveSize > AppConfiguration.MaxAllowedSize)
         {
             var newDriveSize = driveSize;
-            runtime.Log.Info("Getting Existing files");
-            var exStart = DateTime.UtcNow;
+            runtime.Log.Info("Getting Photo files");
+            var pFiles = runtime.PhotoInfoMeta.Where(c => c.PartitionKey == "PhotoFiles").ToList();
+            var photoFiles = pFiles.Where(c => c.TakenDateTime != default(DateTimeOffset));
+            runtime.Log.Info("Photo files count : " + photoFiles.Count());
+            runtime.Log.Info("Setting last modified date by photo taken date");
+            foreach (var exFiles in allDriveFiles)
+            {
+                var photo = photoFiles.FirstOrDefault(p => p.Id == exFiles.Id);
+                if (photo != null)
+                {
+                    exFiles.LastModifiedDateTime = photo.TakenDateTime;
+                }
+            }
+
+            runtime.Log.Info("Ordering by LastModifiedTime");
+            var orderedFiles = allDriveFiles.OrderBy(f => f.LastModifiedDateTime);
+            runtime.Log.Info("Getting Existing blobed files");
             var existingFiles = runtime.FileInfoMeta.Where(c => c.PartitionKey == "DriveFiles" && c.Blobed).ToList();
-            var ela = DateTime.UtcNow - exStart;
-            runtime.Log.Info("Time to get existing files " + ela);
             runtime.Log.Info("Existing files count " + existingFiles.Count);
             foreach (var files in orderedFiles)
             {
@@ -59,17 +70,24 @@ public static class Sync
                     continue;
                 }
 
-                filesToDelete.Add(files);
-
-              //  runtime.DeleteQueue.AddAsync(files);
-                newDriveSize = newDriveSize - (ulong)files.Size;
-                if (newDriveSize < AppConfiguration.SizeAfterDelete)
+                //// if files is present in blobed files list then its okay to delete
+                if (existingFiles.Any(e => e.Id == files.Id))
                 {
-                     runtime.DeleteQueue.AddAsync(files);
-
-                    /// we have reached the size to stop delete.
-                    runtime.Log.Info("Expected drive size after deleting  " + newDriveSize);
-                    break;
+                    filesToDelete.Add(files);
+                    runtime.DeleteQueue.AddAsync(files);
+                    newDriveSize = newDriveSize - (ulong)files.Size;
+                    if (newDriveSize < AppConfiguration.SizeAfterDelete)
+                    {
+                        // runtime.DeleteQueue.AddAsync(files);
+                   
+                        /// we have reached the size to stop delete.
+                        runtime.Log.Info("Expected drive size after deleting  " + newDriveSize);
+                        break;
+                    }
+                }
+                else
+                {
+                    runtime.Log.Info("Skip non-blobed file : " + files.FullPath);
                 }
             }
         }

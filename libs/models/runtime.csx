@@ -21,6 +21,7 @@ public class Runtime
     public CloudTable FileInfoTable { get; set; }
     public CloudTable SyncInfoTable { get; set; }
     public IQueryable<FileInfo> FileInfoMeta { get; set; }
+    public IQueryable<PhotoInfo> PhotoInfoMeta { get; set; }
     public IAsyncCollector<FileInfo> OutputQueue { get; set; }
     public IAsyncCollector<OneDriveItem> DeleteQueue { get; set; }
     public TraceWriter Log { get; set; }

@@ -29,6 +29,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     IQueryable<AuthInfo> authConnect,
     CloudTable onedriveConnect,
     IQueryable<FileInfo> fileInfoMeta,
+    IQueryable<PhotoInfo> photoInfoMeta, 
     IAsyncCollector<OneDriveItem> deleteQueue,
     TraceWriter log)
 {
@@ -38,7 +39,8 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
         AuthConnect = authConnect,
         OnedriveConnect = onedriveConnect,
         FileInfoMeta = fileInfoMeta,
-        DeleteQueue = deleteQueue
+        DeleteQueue = deleteQueue,
+        PhotoInfoMeta = photoInfoMeta
     };
     var startTime = DateTime.UtcNow;
     log.Info("Start Time: " + startTime);   

@@ -15,6 +15,24 @@ public static class BlobDrive
     private static CloudBlobContainer driveThumbContainer = null;
     private static object lockobj = new object();
 
+    public static string GetKey(Runtime runtime, bool isThumbnail)
+    {
+        Initialize();
+        var container = isThumbnail ? driveThumbContainer : driveContainer;
+        var adhocPolicy = new SharedAccessBlobPolicy()
+        {
+            Permissions = SharedAccessBlobPermissions.Read,
+            SharedAccessExpiryTime = DateTime.UtcNow.AddDays(1)
+        };
+        return container.GetSharedAccessSignature(adhocPolicy);
+    }
+
+    public static IEnumerable<IListBlobItem> List(Runtime runtime, bool useFlatBlobListing)
+    {
+        Initialize();
+        return driveContainer.ListBlobs(useFlatBlobListing: useFlatBlobListing);
+    }
+
     public static async Task<FileInfo> Upload(Runtime runtime, FileInfo filemeta, bool isThumbnail, System.IO.Stream fstream)
     {
         Initialize();

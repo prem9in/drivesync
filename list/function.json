@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "request",
+      "type": "httpTrigger",
+      "direction": "in",
+      "methods": [
+        "get",
+        "options"
+      ]
+    },
+    {
+      "name": "return",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "type": "table",
+      "name": "fileInfoTable",
+      "tableName": "DriveFiles",
+      "connection": "AzureWebJobsStorage",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}

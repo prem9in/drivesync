@@ -37,6 +37,13 @@
       "direction": "in"
     },
     {
+      "type": "table",
+      "name": "photoInfoMeta",
+      "tableName": "DriveFiles",
+      "connection": "AzureWebJobsStorage",
+      "direction": "in"
+    },
+    {
       "type": "queue",
       "name": "deleteQueue",
       "queueName": "filesDeleteQueue",
