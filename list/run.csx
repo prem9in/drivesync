@@ -65,8 +65,10 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(listToken);
     */
     await Task.WhenAll(taskLists);
+    var orderedFiles = existingFiles.Result.OrderByDescending(o => o.LastModified);
+    var orderedPhotoFiles = pFiles.Result.OrderByDescending(o => o.TakenDateTime);
     var elapsed = DateTime.UtcNow - start;
     log.Info("Duration : " + elapsed);
-    var result = new { Url = driveUri.Result, ThumbUrl = thumbUri.Result, DriveToken = driveToken.Result, ThumbToken = thumbToken.Result, Files = existingFiles.Result, Photos = pFiles.Result };   
+    var result = new { Url = driveUri.Result, ThumbUrl = thumbUri.Result, DriveToken = driveToken.Result, ThumbToken = thumbToken.Result, Files = orderedFiles, Photos = orderedPhotoFiles };   
     return request.CreateResponse(HttpStatusCode.OK, result, new JsonMediaTypeFormatter());
 }
