@@ -51,6 +51,10 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(thumbToken);
     var driveToken = Task.Run(() => { return BlobDrive.GetKey(runtime, false); });
     taskLists.Add(driveToken);
+    var thumbUri = Task.Run(() => { return BlobDrive.GetUri(runtime, true); });
+    taskLists.Add(thumbUri);
+    var driveUri = Task.Run(() => { return BlobDrive.GetUri(runtime, false); });
+    taskLists.Add(driveUri);
     /*
     var tablePolicy = new SharedAccessTablePolicy()
     {
@@ -63,6 +67,6 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     await Task.WhenAll(taskLists);
     var elapsed = DateTime.UtcNow - start;
     log.Info("Duration : " + elapsed);
-    var result = new { DriveToken = driveToken.Result, ThumbToken = thumbToken.Result, Files = existingFiles.Result, Photos = pFiles.Result };   
+    var result = new { Url = driveUri.Result, ThumbUrl = thumbUri.Result, DriveToken = driveToken.Result, ThumbToken = thumbToken.Result, Files = existingFiles.Result, Photos = pFiles.Result };   
     return request.CreateResponse(HttpStatusCode.OK, result, new JsonMediaTypeFormatter());
 }

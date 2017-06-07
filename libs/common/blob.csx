@@ -27,6 +27,13 @@ public static class BlobDrive
         return container.GetSharedAccessSignature(adhocPolicy);
     }
 
+    public static string GetUri(Runtime runtime, bool isThumbnail)
+    {
+        Initialize();
+        var container = isThumbnail ? driveThumbContainer : driveContainer;       
+        return container.Uri.AbsoluteUri;
+    }
+
     public static IEnumerable<IListBlobItem> List(Runtime runtime, bool useFlatBlobListing)
     {
         Initialize();
