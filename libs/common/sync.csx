@@ -93,8 +93,12 @@ public static class Sync
         }
 
         runtime.Log.Info("Number of files to delete  " + filesToDelete.Count);
-        var last = filesToDelete[filesToDelete.Count - 1];
-        runtime.Log.Info("Last file to deleted  " + last.Type + " " + last.FullPath + " " + last.LastModifiedDateTime);
+        if (filesToDelete.Count > 0)
+        {
+            var last = filesToDelete[filesToDelete.Count - 1];
+            runtime.Log.Info("Last file to deleted  " + last.Type + " " + last.FullPath + " " + last.LastModifiedDateTime);
+        } 
+        
         return filesToDelete;
     }
 
