@@ -1,3 +1,7 @@
+#r "Newtonsoft.Json"
+#r "Microsoft.WindowsAzure.Storage"
+#r "System.Web"
+
 using System.Linq;
 using System.Linq.Expressions;
 using System.Collections;
@@ -43,6 +47,20 @@ public static string NormalizeRowKey(string id)
     return result;
 }
 
+
+public static T RunWithInstrumentation<T>(Func<T> method, string friendlyName, Microsoft.Azure.WebJobs.Host.TraceWriter log)
+{
+    var result = default(T);
+    var startTime = DateTime.UtcNow;
+    if (method != null)
+    {
+        result = method.Invoke();
+    }
+
+    var elapsed = DateTime.UtcNow - startTime;
+    log.Info(friendlyName + " duration : " + elapsed);
+    return result;
+}
 
 public static void InitializeCharMap()
 {

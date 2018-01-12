@@ -6,6 +6,7 @@
 #load "./../libs/common/blob.csx"
 #load "./../libs/models/runtime.csx"
 #load "./../libs/models/fileinfo.csx"
+#load "./../libs/common/extension.csx"
 
 using System;
 using System.Web;
@@ -19,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http.Formatting;
 using System.Configuration;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -42,27 +44,27 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     var start = DateTime.UtcNow;
     log.Info("Start : " + start);
     // Construct the query operation for all customer entities where PartitionKey="Smith".
-    TableQuery<FileInfo> fileQuery = new TableQuery<FileInfo>().Where(TableQuery.CombineFilters(
+    var fileQuery = new TableQuery<FileInfo>().Where(TableQuery.CombineFilters(
         TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "DriveFiles"),
         TableOperators.And,
         TableQuery.GenerateFilterConditionForBool("Blobed", QueryComparisons.Equal, true)));
-    TableQuery<PhotoInfo> photoQuery = new TableQuery<PhotoInfo>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PhotoFiles"));
-    TableQuery<VideoInfo> videoQuery = new TableQuery<VideoInfo>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "VideoFiles"));
+    var photoQuery = new TableQuery<PhotoInfo>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PhotoFiles"));
+    var videoQuery = new TableQuery<VideoInfo>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "VideoFiles"));
     var taskLists = new List<Task>();
-    var existingFiles = Task.Run(() => { return fileInfoTable.ExecuteQuery(fileQuery).Select(f => new { f.Id, f.Extension, f.FullPath, f.MimeType, f.LastModifiedBy, f.LastModified, f.Size, f.Type, f.Name }); });
+    var existingFiles = Task.Run(() => RunWithInstrumentation(()=> fileInfoTable.ExecuteQuery(fileQuery).Select(f => new { f.Id, f.Extension, f.FullPath, f.MimeType, f.LastModifiedBy, f.LastModified, f.Size, f.Type, f.Name }), "FileQuery", log));       
     taskLists.Add(existingFiles);
-    var pFiles = Task.Run(() => { return fileInfoTable.ExecuteQuery(photoQuery).Select(f => new { f.Id, f.CameraMake, f.CameraModel, f.FNumber, f.FocalLength, f.Height, f.Iso, f.TakenDateTime, f.Width }); });
+    var pFiles = Task.Run(() => RunWithInstrumentation(()=> fileInfoTable.ExecuteQuery(photoQuery).Select(f => new { f.Id, f.CameraMake, f.CameraModel, f.FNumber, f.FocalLength, f.Height, f.Iso, f.TakenDateTime, f.Width }), "PhotoQuery", log));               
     taskLists.Add(pFiles);
-    var vFiles = Task.Run(() => { return fileInfoTable.ExecuteQuery(videoQuery).Select(f => new { f.Id, f.Height, f.Duration, f.Width }); });
+    var vFiles = Task.Run(() => RunWithInstrumentation(()=> fileInfoTable.ExecuteQuery(videoQuery).Select(f => new { f.Id, f.Height, f.Duration, f.Width }), "VideoQuery", log));
     taskLists.Add(vFiles);
     var keys = new Keys();
-    var thumbToken = Task.Run(() => { return BlobDrive.GetKey(runtime, true); });
+    var thumbToken = Task.Run(() => RunWithInstrumentation(() => BlobDrive.GetKey(runtime, true), "ThumbToken", log));
     taskLists.Add(thumbToken);
-    var driveToken = Task.Run(() => { return BlobDrive.GetKey(runtime, false); });
+    var driveToken = Task.Run(() => RunWithInstrumentation(() => BlobDrive.GetKey(runtime, false), "DriveToken", log));
     taskLists.Add(driveToken);
-    var thumbUri = Task.Run(() => { return BlobDrive.GetUri(runtime, true); });
+    var thumbUri = Task.Run(() => RunWithInstrumentation(() => BlobDrive.GetUri(runtime, true), "ThumbUri", log));
     taskLists.Add(thumbUri);
-    var driveUri = Task.Run(() => { return BlobDrive.GetUri(runtime, false); });
+    var driveUri = Task.Run(() => RunWithInstrumentation(() => BlobDrive.GetUri(runtime, false), "DriveUri", log));
     taskLists.Add(driveUri);
     /*
     var tablePolicy = new SharedAccessTablePolicy()
@@ -74,7 +76,10 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(listToken);
     */
     await Task.WhenAll(taskLists);
-    IEnumerable<dynamic> orderedFiles = existingFiles.Result.ToList().OrderByDescending(o => o.LastModified);
+    IEnumerable<dynamic> orderedFiles = RunWithInstrumentation(() => existingFiles.Result.ToList().OrderByDescending(o => o.LastModified), "FileList_Execute", log);
+    var allPhotofiles = RunWithInstrumentation(() => pFiles.Result.ToDictionary(p => p.Id), "PhotoFiles_Execute", log);
+    var allVideofiles = RunWithInstrumentation(() => vFiles.Result.ToDictionary(v => v.Id), "VideoFiles_Execute", log);
+
     if (!string.IsNullOrWhiteSpace(orderBy))
     {
         if (orderBy.EndsWith(" desc", StringComparison.OrdinalIgnoreCase))
@@ -97,32 +102,23 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     {
         orderedFiles = orderedFiles.Take(topValue);
     }
-    
-    var selectedPhotofiles = new List<dynamic>();
-    var selectedVideofiles = new List<dynamic>();
-    foreach (var of in orderedFiles)
-    {
-        if (of.Type == "Photo")
+
+    var selectedPhotofiles = new ConcurrentBag<dynamic>();
+    var selectedVideofiles = new ConcurrentBag<dynamic>();
+    Parallel.ForEach(orderedFiles, (of) => {
+        if (of.Type == "Photo" && allPhotofiles.ContainsKey(of.Id))
         {
-            var pf = pFiles.Result.FirstOrDefault(p => p.Id == of.Id);
-            if (pf != null)
-            {
-                selectedPhotofiles.Add(pf);
-            }
+           selectedPhotofiles.Add(allPhotofiles[of.Id]);            
         }
 
-        if (of.Type == "Video")
-        {
-            var vf = vFiles.Result.FirstOrDefault(v => v.Id == of.Id);
-            if (vf != null)
-            {
-                selectedVideofiles.Add(vf);
-            }
-        }            
-    }
+        if (of.Type == "Video" && allVideofiles.ContainsKey(of.Id))
+        {           
+            selectedVideofiles.Add(allVideofiles[of.Id]);            
+        } 
+    });   
    
     var elapsed = DateTime.UtcNow - start;
-    log.Info("Duration : " + elapsed);
+    log.Info("Total Duration : " + elapsed);
     var result = new { Duration = elapsed, Url = driveUri.Result, ThumbUrl = thumbUri.Result, DriveToken = driveToken.Result, ThumbToken = thumbToken.Result, Files = orderedFiles, Photos = selectedPhotofiles, Videos = selectedVideofiles };   
     return request.CreateResponse(HttpStatusCode.OK, result, new JsonMediaTypeFormatter());
 }
