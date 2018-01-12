@@ -76,15 +76,15 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(listToken);
     */
     await Task.WhenAll(taskLists);
-    taskLists.Clear();
+    var processTaskLists = new List<Task>();
     var orderTask = Task.Run(() => RunWithInstrumentation(() => existingFiles.Result.ToList().OrderByDescending(o => o.LastModified), "FileList_Execute", log));
-    taskLists.Add(orderTask);
+    processTaskLists.Add(orderTask);
     var photoTask = Task.Run(() => RunWithInstrumentation(() => pFiles.Result.ToDictionary(p => p.Id), "PhotoFiles_Execute", log));
-    taskLists.Add(photoTask);
+    processTaskLists.Add(photoTask);
     var videoTask = Task.Run(() => RunWithInstrumentation(() => vFiles.Result.ToDictionary(v => v.Id), "VideoFiles_Execute", log));
-    taskLists.Add(photoTask);
-    await Task.WhenAll(taskLists);
-    taskLists.Clear();
+    processTaskLists.Add(photoTask);
+    await Task.WhenAll(processTaskLists);
+    // collect the results    
     IEnumerable<dynamic> orderedFiles = orderTask.Result;
     var allPhotofiles = photoTask.Result;
     var allVideofiles = videoTask.Result;
