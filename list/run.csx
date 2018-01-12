@@ -76,9 +76,18 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(listToken);
     */
     await Task.WhenAll(taskLists);
-    IEnumerable<dynamic> orderedFiles = RunWithInstrumentation(() => existingFiles.Result.ToList().OrderByDescending(o => o.LastModified), "FileList_Execute", log);
-    var allPhotofiles = RunWithInstrumentation(() => pFiles.Result.ToDictionary(p => p.Id), "PhotoFiles_Execute", log);
-    var allVideofiles = RunWithInstrumentation(() => vFiles.Result.ToDictionary(v => v.Id), "VideoFiles_Execute", log);
+    taskLists.Clear();
+    var orderTask = Task.Run(() => RunWithInstrumentation(() => existingFiles.Result.ToList().OrderByDescending(o => o.LastModified), "FileList_Execute", log));
+    taskLists.Add(orderTask);
+    var photoTask = Task.Run(() => RunWithInstrumentation(() => pFiles.Result.ToDictionary(p => p.Id), "PhotoFiles_Execute", log));
+    taskLists.Add(photoTask);
+    var videoTask = Task.Run(() => RunWithInstrumentation(() => vFiles.Result.ToDictionary(v => v.Id), "VideoFiles_Execute", log));
+    taskLists.Add(photoTask);
+    await Task.WhenAll(taskLists);
+    taskLists.Clear();
+    var orderedFiles = orderTask.Result;
+    var allPhotofiles = photoTask.Result;
+    var allVideofiles = videoTask.Result;
 
     if (!string.IsNullOrWhiteSpace(orderBy))
     {
