@@ -85,7 +85,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     taskLists.Add(photoTask);
     await Task.WhenAll(taskLists);
     taskLists.Clear();
-    var orderedFiles = orderTask.Result;
+    IEnumerable<dynamic> orderedFiles = orderTask.Result;
     var allPhotofiles = photoTask.Result;
     var allVideofiles = videoTask.Result;
 
