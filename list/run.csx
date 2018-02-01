@@ -44,10 +44,11 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
     var skip = requestParams.Get("skip");
     var top = requestParams.Get("top");
     var orderBy = requestParams.Get("orderby");
+    var refresh = requestParams.Get("refresh");
     var start = DateTime.UtcNow;
     log.Info("Start : " + start);
 
-    if (CachedResult == null) 
+    if (CachedResult == null || (!string.IsNullOrWhiteSpace(refresh) && refresh.Equals("true", StringComparison.OrdinalIgnoreCase))) 
     {           
         // Construct the query operation for all customer entities where PartitionKey="Smith".
         var fileQuery = new TableQuery<FileInfo>().Where(TableQuery.CombineFilters(
