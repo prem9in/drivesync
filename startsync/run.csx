@@ -44,7 +44,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage request,
         FileInfoMeta = fileInfoMeta,
         OutputQueue = outputQueue
     };
-    var startTime = DateTime.UtcNow;
+    var startTime = DateTime.UtcNow; 
     log.Info("Start Time: " + startTime);   
     var allFiles = await OneDrive.GetAllFiles(runtime);
     var syncInfo = await Sync.Start(runtime, allFiles, startTime);

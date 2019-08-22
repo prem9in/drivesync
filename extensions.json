@@ -1,0 +1,8 @@
+{
+  "extensions": [
+    {
+      "name": "AzureStorage",
+      "typeName": "Microsoft.Azure.WebJobs.Extensions.Storage.AzureStorageWebJobsStartup, Microsoft.Azure.WebJobs.Extensions.Storage, Version=3.0.7, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    }
+  ]
+}

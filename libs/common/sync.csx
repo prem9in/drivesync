@@ -339,7 +339,7 @@ public static class Sync
                         //// push to Queue
                         // if (newFileCount < 5)
                         // {
-                            runtime.OutputQueue.AddAsync(nfile);
+                           await runtime.OutputQueue.AddAsync(nfile);
                         //}
                     }
                 }
