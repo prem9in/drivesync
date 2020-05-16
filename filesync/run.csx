@@ -44,7 +44,14 @@ public static async void Run(IQueryable<AuthInfo> authConnect,
     var startTime = DateTime.UtcNow;
     log.Info("Start Time: " + startTime);
 
-    await Sync.SyncFile(runtime, queueItem);
+    try
+    {
+        await Sync.SyncFile(runtime, queueItem);
+    }
+    catch(Exception ex)
+    {
+        log.Error(ex.Message);
+    }
 
     var elapsed = DateTime.UtcNow - startTime;
     log.Info("Duration: " + elapsed);
