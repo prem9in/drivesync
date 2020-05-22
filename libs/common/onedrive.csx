@@ -10,6 +10,7 @@
 #load "./../models/onedrive.csx"
 #load "./../models/onedriveerrorresponse.csx"
 
+
 using System;
 using System.Text;
 using System.Web;
@@ -37,7 +38,7 @@ public static class OneDrive
         return fileList;
     }
 
-    public static async Task<System.IO.Stream> GetThumbnail(Runtime runtime, string id)
+    public static async Task<System.IO.Stream> GetThumbnail(Runtime runtime, string id, long size)
     {
         System.IO.Stream thresult = null;
         var thumbnailQuery = GetContentPath(id, true);
@@ -49,7 +50,7 @@ public static class OneDrive
             if (!string.IsNullOrWhiteSpace(medium))
             {
                 runtime.Log.Info("Downloading thumbnail from " + medium + ", id: " + id);
-                thresult = await Http.MakeRequestForFile(medium, HttpMethod.Get, null, null, null);
+                thresult = await Http.MakeRequestForFile(medium, HttpMethod.Get, null, null, null, size);
             }
             else
             {
@@ -64,11 +65,11 @@ public static class OneDrive
         return thresult;
     }
 
-    public static async Task<System.IO.Stream> GetFileContent(Runtime runtime, string id)
+    public static async Task<System.IO.Stream> GetFileContent(Runtime runtime, string id, long size)
     {
         var fileQuery = GetContentPath(id, false);
         runtime.Log.Info("Downloading file from " + fileQuery + ", id: " + id);
-        var fileStream = await CallOneDriveForFile(runtime, fileQuery);
+        var fileStream = await CallOneDriveForFile(runtime, fileQuery, size);
         return fileStream;
     }
 
@@ -217,9 +218,9 @@ public static class OneDrive
         return await Http.MakeRequest<TResponse, TError>(queryUrl, HttpMethod.Get, OAuthHeaders(runtime), null, null);        
     }
 
-   private static async Task<Stream> CallOneDriveForFile(Runtime runtime, string queryUrl)
+   private static async Task<Stream> CallOneDriveForFile(Runtime runtime, string queryUrl, long size)
    {  
-        return await Http.MakeRequestForFile(queryUrl, HttpMethod.Get, OAuthHeaders(runtime), null, null);
+        return await Http.MakeRequestForFile(queryUrl, HttpMethod.Get, OAuthHeaders(runtime), null, null, size);
     }
 
     private static Dictionary<string, string> OAuthHeaders(Runtime runtime)

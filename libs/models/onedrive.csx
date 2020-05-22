@@ -53,6 +53,8 @@ public class DriveItems
     public List<OneDriveItem> Items { get; set; }
 }
 
+//// see defintions https://docs.microsoft.com/en-us/graph/api/resources/driveitem?view=graph-rest-1.0
+
 public class OneDriveItem
 {
     [JsonIgnore]

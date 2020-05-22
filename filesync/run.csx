@@ -44,15 +44,25 @@ public static async void Run(IQueryable<AuthInfo> authConnect,
     var startTime = DateTime.UtcNow;
     log.Info("Start Time: " + startTime);
 
+    var result = false;
     try
     {
-        await Sync.SyncFile(runtime, queueItem);
+        result = await Sync.SyncFile(runtime, queueItem);
     }
     catch(Exception ex)
     {
         log.Error(ex.Message);
     }
 
+    if (result)
+    {
+        log.Info("File synced successfully " + queueItem.ToString());
+    }
+    else
+    {
+        log.Error("File could not synced " + queueItem.ToString());
+    }
+
     var elapsed = DateTime.UtcNow - startTime;
-    log.Info("Duration: " + elapsed);
+    log.Info("Duration: " + elapsed + " item " + queueItem.ToString());
 }

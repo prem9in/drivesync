@@ -106,8 +106,8 @@ public static class Sync
     {
         var taskList = new List<Task>();
         runtime.Log.Info("Getting content and Thumbnail for " + filetoSync.ToString());
-        var fileTask = OneDrive.GetFileContent(runtime, filetoSync.Id);
-        var thumbTask = OneDrive.GetThumbnail(runtime, filetoSync.Id);
+        var fileTask = OneDrive.GetFileContent(runtime, filetoSync.Id, filetoSync.Size);
+        var thumbTask = OneDrive.GetThumbnail(runtime, filetoSync.Id, filetoSync.Size);
         taskList.Add(fileTask);
         taskList.Add(thumbTask);
         await Task.WhenAll(taskList);

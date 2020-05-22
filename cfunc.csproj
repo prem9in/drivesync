@@ -267,6 +267,9 @@
     <None Update="libs\common\onedrive.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="libs\common\bufferedstream.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="libs\common\sync.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
